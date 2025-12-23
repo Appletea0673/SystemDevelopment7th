@@ -1,16 +1,59 @@
 http:
   routers:
-    app:
-      rule: "PathPrefix(`/`)"
+    my-router:
+      rule: "Host(`localhost`)"
+      service: main-loadbalancer
       entryPoints:
         - web
-      service: app-weighted
+    app:
+      rule: Host(`example.local`)
+      entryPoints:
+        - web
+      service: app-svc
+      # tls:
+      #   certResolver: myresolver
 
   services:
-    app-weighted:
+    main-loadbalancer:
       weighted:
         services:
-          - name: app-stable@docker
-            weight: 50
-          - name: app-canary@docker
-            weight: 50
+          - name: stable-app-service
+            weight: 90
+          - name: canary-app-service
+            weight: 10
+
+    stable-app-service:
+      loadBalancer:
+        servers:
+          - url: "http://app-stable:8080"
+
+    canary-app-service:
+      loadBalancer:
+        servers:
+          - url: "http://app-canary:8080"
+
+    app-svc:
+      loadBalancer:
+        servers:
+          - url: http://app:8080
+        passHostHeader: true
+
+  middlewares:
+    redirect-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+tcp:
+  routers:
+    db:
+      entryPoints:
+        - db
+      rule: "HostSNI(`*`)"
+      service: db-svc
+
+  services:
+    db-svc:
+      loadBalancer:
+        servers:
+          - address: db:5432
