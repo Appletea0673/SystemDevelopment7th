@@ -1,5 +1,5 @@
 # Canary Release Hands-on Lab
-
+ 
 Learn canary deployments using Docker + Traefik!
 
 ## What is Canary Release?
